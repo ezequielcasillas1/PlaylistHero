@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Sparkles, Music2, ListMusic, AlertCircle } from 'lucide-react'
 import { Button } from './ui/button'
@@ -9,6 +9,7 @@ import { VideoGrid } from './VideoGrid'
 import { YouTubeEmbed } from './YouTubeEmbed'
 import { UpgradeModal } from './UpgradeModal'
 import { Video, FREE_PROMPT_LIMIT } from '@/types'
+import { getFingerprint } from '@/lib/fingerprint'
 
 const VIDEO_COUNT_OPTIONS = [10, 20, 30, 50, 100]
 
@@ -20,15 +21,40 @@ export function PlaylistGenerator() {
   const [selectedVideo, setSelectedVideo] = useState<Video | null>(null)
   const [playlistTitle, setPlaylistTitle] = useState('')
   const [playlistDescription, setPlaylistDescription] = useState('')
-  const [promptCount, setPromptCount] = useState(0)
+  const [remainingCount, setRemainingCount] = useState(FREE_PROMPT_LIMIT)
   const [showUpgradeModal, setShowUpgradeModal] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [userTier] = useState<'free' | 'paid'>('free')
+  const [fingerprint, setFingerprint] = useState<string | null>(null)
+
+  // Initialize fingerprint and fetch server-side usage count
+  useEffect(() => {
+    async function initUsage() {
+      const fp = await getFingerprint()
+      setFingerprint(fp)
+
+      try {
+        const response = await fetch('/api/usage', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ fingerprint: fp }),
+        })
+        const data = await response.json()
+        if (data.remainingCount !== undefined) {
+          setRemainingCount(data.remainingCount)
+        }
+      } catch (err) {
+        console.error('Failed to fetch usage:', err)
+      }
+    }
+    initUsage()
+  }, [])
 
   const handleGenerate = useCallback(async () => {
     if (!prompt.trim()) return
+    if (!fingerprint) return
 
-    if (userTier === 'free' && promptCount >= FREE_PROMPT_LIMIT) {
+    if (userTier === 'free' && remainingCount <= 0) {
       setShowUpgradeModal(true)
       return
     }
@@ -42,10 +68,16 @@ export function PlaylistGenerator() {
       const response = await fetch('/api/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt, videoCount }),
+        body: JSON.stringify({ prompt, videoCount, fingerprint }),
       })
 
       const data = await response.json()
+
+      if (response.status === 429 || data.limitReached) {
+        setRemainingCount(0)
+        setShowUpgradeModal(true)
+        return
+      }
 
       if (!response.ok) {
         throw new Error(data.error || 'Failed to generate playlist')
@@ -59,14 +91,16 @@ export function PlaylistGenerator() {
         setSelectedVideo(data.videos[0])
       }
 
-      setPromptCount(prev => prev + 1)
+      if (data.remainingCount !== undefined) {
+        setRemainingCount(data.remainingCount)
+      }
     } catch (err) {
       console.error('Error generating playlist:', err)
       setError(err instanceof Error ? err.message : 'Something went wrong')
     } finally {
       setIsLoading(false)
     }
-  }, [prompt, videoCount, promptCount, userTier])
+  }, [prompt, videoCount, remainingCount, userTier, fingerprint])
 
   return (
     <section id="generator" className="relative py-20">
@@ -101,8 +135,8 @@ export function PlaylistGenerator() {
                   <Sparkles className="h-4 w-4 text-yellow-500" />
                   <span className="text-sm text-white/70">Free Plan</span>
                 </div>
-                <span className="text-sm text-white/50">
-                  {FREE_PROMPT_LIMIT - promptCount} generations left
+                <span className={`text-sm ${remainingCount <= 0 ? 'text-red-400' : 'text-white/50'}`}>
+                  {remainingCount} generations left
                 </span>
               </div>
             )}
