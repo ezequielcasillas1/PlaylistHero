@@ -22,13 +22,15 @@ interface GenerateRequest {
   fingerprint: string
   mood?: string
   enhancePrompt?: boolean
+  timeRange?: 'latest' | 'awhile' | 'atime' | 'longtime'
+  creatorChannelId?: string
 }
 
 interface GeminiResponse {
   searchQueries: string[]
   playlistTitle: string
   playlistDescription: string
-  contentType: 'music' | 'news' | 'trending' | 'general'
+  contentType: 'music' | 'news' | 'trending' | 'general' | 'spiritual'
   enhancedPrompt?: string
 }
 
@@ -45,11 +47,11 @@ function getClientIP(request: NextRequest): string {
 export async function POST(request: NextRequest) {
   try {
     const body: GenerateRequest = await request.json()
-    const { prompt, videoCount, fingerprint, mood, enhancePrompt } = body
+    const { prompt, videoCount, fingerprint, mood, enhancePrompt, timeRange, creatorChannelId } = body
 
-    if (!prompt || !videoCount) {
+    if ((!prompt && !creatorChannelId) || !videoCount) {
       return NextResponse.json(
-        { error: 'Missing prompt or videoCount' },
+        { error: 'Missing prompt/creator or videoCount' },
         { status: 400 }
       )
     }
@@ -86,8 +88,8 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const geminiResponse = await generateSearchQueries(prompt, videoCount, mood, enhancePrompt)
-    const videos = await searchYouTubeVideos(geminiResponse.searchQueries, videoCount, geminiResponse.contentType)
+    const geminiResponse = await generateSearchQueries(prompt || '', videoCount, mood, enhancePrompt)
+    const videos = await searchYouTubeVideos(geminiResponse.searchQueries, videoCount, geminiResponse.contentType, timeRange, creatorChannelId)
 
     return NextResponse.json({
       success: true,
@@ -126,6 +128,7 @@ IMPORTANT: Determine the content type based on the user's intent:
 - "music" = songs, playlists, albums, artists, beats, lofi, EDM, etc.
 - "news" = current events, politics, world news, breaking news, updates
 - "trending" = viral videos, popular content, what's hot right now
+- "spiritual" = bible readings, scripture, sermons, worship, christian content, gospel, hymns, faith-based, religious teachings, psalms, devotionals
 - "general" = tutorials, reviews, entertainment, vlogs, gaming, tech, sports, podcasts, etc.
 
 For NEWS/TRENDING requests:
@@ -142,14 +145,21 @@ ${mood ? `For MOOD-BASED requests:
 - If mood is sad/melancholic/lonely: include comforting, relatable content
 - If mood is focused/peaceful/relaxed: prioritize calm, ambient content
 - If mood is angry/anxious: include cathartic or calming content as appropriate
+- If mood is christlike: ALWAYS use contentType "spiritual" - include bible readings, scripture, sermons, worship music, hymns, gospel
 - Always consider the mood when selecting search terms and content type` : ''}
+
+For SPIRITUAL/RELIGIOUS requests:
+- Include specific bible books, chapters, scripture references when mentioned
+- Add "bible reading", "scripture", "sermon", "worship" keywords
+- Keep search queries focused on the exact religious content requested
+- Do NOT restrict to music category - spiritual content includes readings, teachings, sermons
 
 Respond in JSON format only:
 {
   "searchQueries": ["query1", "query2", ...],
   "playlistTitle": "A catchy, relevant title",
   "playlistDescription": "Brief description of what this collection contains",
-  "contentType": "music" | "news" | "trending" | "general"${enhancePrompt ? ',\n  "enhancedPrompt": "The enhanced, more descriptive version of the user\'s prompt"' : ''}
+  "contentType": "music" | "news" | "trending" | "general" | "spiritual"${enhancePrompt ? ',\n  "enhancedPrompt": "The enhanced, more descriptive version of the user\'s prompt"' : ''}
 }
 
 Generate ${Math.min(Math.ceil(videoCount / 5), 10)} unique search queries optimized for YouTube's algorithm. Make queries specific and likely to return high-quality, recent, relevant results.`
@@ -236,15 +246,22 @@ async function generateSearchQueries(
   mood?: string,
   enhancePrompt?: boolean
 ): Promise<GeminiResponse> {
+  const hasPrompt = prompt && prompt.trim().length > 0
+  
   const fallbackResponse: GeminiResponse = {
-    searchQueries: [prompt],
-    playlistTitle: `${prompt.charAt(0).toUpperCase() + prompt.slice(1)} Playlist`,
-    playlistDescription: `Videos based on: ${prompt}`,
+    searchQueries: hasPrompt ? [prompt] : [''],
+    playlistTitle: hasPrompt 
+      ? `${prompt.charAt(0).toUpperCase() + prompt.slice(1)} Playlist`
+      : 'Creator Videos',
+    playlistDescription: hasPrompt 
+      ? `Videos based on: ${prompt}`
+      : 'Videos from this creator',
     contentType: 'general',
   }
 
-  if (!GEMINI_API_KEY && !OPENAI_API_KEY) {
-    console.warn('No AI API keys configured, using direct search')
+  if (!hasPrompt || (!GEMINI_API_KEY && !OPENAI_API_KEY)) {
+    if (!hasPrompt) console.log('No prompt provided, using channel-only search')
+    else console.warn('No AI API keys configured, using direct search')
     return fallbackResponse
   }
 
@@ -274,10 +291,37 @@ async function generateSearchQueries(
   return fallbackResponse
 }
 
+function getTimeRangeDates(timeRange?: 'latest' | 'awhile' | 'atime' | 'longtime'): { publishedAfter?: string, publishedBefore?: string } {
+  if (!timeRange) return {}
+  
+  const currentYear = new Date().getFullYear()
+  
+  switch (timeRange) {
+    case 'latest':
+      return { publishedAfter: `${currentYear}-01-01T00:00:00Z` }
+    case 'awhile':
+      return { 
+        publishedAfter: `${currentYear - 6}-01-01T00:00:00Z`,
+        publishedBefore: `${currentYear}-01-01T00:00:00Z`
+      }
+    case 'atime':
+      return { 
+        publishedAfter: `${currentYear - 11}-01-01T00:00:00Z`,
+        publishedBefore: `${currentYear - 6}-01-01T00:00:00Z`
+      }
+    case 'longtime':
+      return { publishedBefore: `${currentYear - 11}-01-01T00:00:00Z` }
+    default:
+      return {}
+  }
+}
+
 async function searchYouTubeVideos(
   queries: string[], 
   maxVideos: number, 
-  contentType: 'music' | 'news' | 'trending' | 'general'
+  contentType: 'music' | 'news' | 'trending' | 'general' | 'spiritual',
+  timeRange?: 'latest' | 'awhile' | 'atime' | 'longtime',
+  channelId?: string
 ): Promise<Video[]> {
   if (!YOUTUBE_API_KEY) {
     console.warn('YouTube API key not configured, returning mock data')
@@ -286,6 +330,7 @@ async function searchYouTubeVideos(
 
   const allVideos: Video[] = []
   const videosPerQuery = Math.ceil(maxVideos / queries.length)
+  const timeRangeDates = getTimeRangeDates(timeRange)
 
   // Configure search params based on content type
   const getSearchParams = (query: string) => {
@@ -297,25 +342,43 @@ async function searchYouTubeVideos(
       key: YOUTUBE_API_KEY!,
     })
 
+    if (channelId) {
+      baseParams.set('channelId', channelId)
+    }
+
     switch (contentType) {
       case 'music':
         baseParams.set('order', 'relevance')
-        baseParams.set('videoCategoryId', '10') // Music category
+        if (!channelId) baseParams.set('videoCategoryId', '10')
         break
       case 'news':
-        baseParams.set('order', 'date') // Latest first
-        baseParams.set('videoCategoryId', '25') // News & Politics
-        baseParams.set('publishedAfter', getRecentDate(7)) // Last 7 days
+        baseParams.set('order', 'date')
+        if (!channelId) baseParams.set('videoCategoryId', '25')
+        if (!timeRange) {
+          baseParams.set('publishedAfter', getRecentDate(7))
+        }
         break
       case 'trending':
-        baseParams.set('order', 'viewCount') // Most viewed
-        baseParams.set('publishedAfter', getRecentDate(30)) // Last 30 days
+        baseParams.set('order', 'viewCount')
+        if (!timeRange) {
+          baseParams.set('publishedAfter', getRecentDate(30))
+        }
+        break
+      case 'spiritual':
+        baseParams.set('order', 'relevance')
         break
       case 'general':
       default:
         baseParams.set('order', 'relevance')
-        // No category restriction - search all content
         break
+    }
+
+    // Apply time range filter (overrides content type defaults if specified)
+    if (timeRangeDates.publishedAfter) {
+      baseParams.set('publishedAfter', timeRangeDates.publishedAfter)
+    }
+    if (timeRangeDates.publishedBefore) {
+      baseParams.set('publishedBefore', timeRangeDates.publishedBefore)
     }
 
     return baseParams

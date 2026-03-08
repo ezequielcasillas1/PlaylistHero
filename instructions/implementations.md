@@ -25,6 +25,11 @@
 **Files:** PlaylistGenerator.tsx, CookieConsent.tsx, Footer.tsx, Hero.tsx, Features.tsx, Pricing.tsx, layout.tsx, api/consent/route.ts, 002_cookie_consent.sql
 **Result:** Added mood filter (20 options), AI prompt enhancement toggle, exploit-proof cookie consent wall, expanded content messaging (not just music), updated footer (Reddit/Facebook, removed changelog/careers), added weekly $1.99 tier
 
+### 2026-03-08 - Creator Filter Feature
+**Status:** SUCCESS
+**Files:** PlaylistGenerator.tsx, api/search-creators/route.ts, api/generate/route.ts
+**Result:** Added "Multiple Creators" vs "One Creator" toggle. One Creator mode shows searchable channel picker with profile images, endless scroll, debounced search (2+ chars), mood/prompt context filtering. Selected creator locks video generation to that channel. Fixed YouTube profile images not loading by adding `referrerPolicy="no-referrer"` to img tags.
+
 ### Architecture Changes
 - `YOUTUBE_API_KEY` and `GEMINI_API_KEY` are now server-only (no NEXT_PUBLIC_ prefix)
 - Client calls `/api/generate` endpoint
