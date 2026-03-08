@@ -7,6 +7,84 @@ interface UsageResult {
   error?: string
 }
 
+interface ConsentResult {
+  hasConsent: boolean
+  error?: string
+}
+
+export async function checkCookieConsent(
+  fingerprint: string,
+  ipAddress: string
+): Promise<ConsentResult> {
+  try {
+    const { data, error } = await supabase
+      .from('anonymous_usage')
+      .select('cookies_accepted')
+      .eq('fingerprint', fingerprint)
+      .eq('ip_address', ipAddress)
+      .single()
+
+    if (error && error.code !== 'PGRST116') {
+      console.error('Consent check error:', error)
+      return { hasConsent: false, error: 'Database error' }
+    }
+
+    return { hasConsent: data?.cookies_accepted === true }
+  } catch (error) {
+    console.error('Consent check error:', error)
+    return { hasConsent: false, error: 'Unknown error' }
+  }
+}
+
+export async function acceptCookieConsent(
+  fingerprint: string,
+  ipAddress: string
+): Promise<ConsentResult> {
+  try {
+    const { data: existing } = await supabase
+      .from('anonymous_usage')
+      .select('id')
+      .eq('fingerprint', fingerprint)
+      .eq('ip_address', ipAddress)
+      .single()
+
+    if (existing) {
+      const { error } = await supabase
+        .from('anonymous_usage')
+        .update({
+          cookies_accepted: true,
+          consent_accepted_at: new Date().toISOString(),
+        })
+        .eq('id', existing.id)
+
+      if (error) {
+        console.error('Consent update error:', error)
+        return { hasConsent: false, error: 'Database error' }
+      }
+    } else {
+      const { error } = await supabase
+        .from('anonymous_usage')
+        .insert({
+          fingerprint,
+          ip_address: ipAddress,
+          generation_count: 0,
+          cookies_accepted: true,
+          consent_accepted_at: new Date().toISOString(),
+        })
+
+      if (error) {
+        console.error('Consent insert error:', error)
+        return { hasConsent: false, error: 'Database error' }
+      }
+    }
+
+    return { hasConsent: true }
+  } catch (error) {
+    console.error('Consent accept error:', error)
+    return { hasConsent: false, error: 'Unknown error' }
+  }
+}
+
 export async function checkAndIncrementUsage(
   fingerprint: string,
   ipAddress: string

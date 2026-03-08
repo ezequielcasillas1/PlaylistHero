@@ -1,13 +1,13 @@
 'use client'
 
 import { motion } from 'framer-motion'
-import { Sparkles, Zap, Shield, Music, Clock, Heart } from 'lucide-react'
+import { Sparkles, Zap, Shield, Layers, Focus, Heart } from 'lucide-react'
 
 const features = [
   {
     icon: Sparkles,
     title: 'AI-Powered Curation',
-    description: 'Our AI understands your mood and creates perfectly matched playlists from millions of YouTube videos.',
+    description: 'Our AI understands your mood and intent, creating perfectly matched playlists from millions of YouTube videos.',
   },
   {
     icon: Zap,
@@ -15,14 +15,14 @@ const features = [
     description: 'Get your personalized playlist in under 5 seconds. No waiting, no hassle.',
   },
   {
-    icon: Music,
-    title: 'Any Vibe, Any Time',
-    description: 'From lofi study beats to epic gaming soundtracks - describe it and we\'ll find it.',
+    icon: Layers,
+    title: 'Every Genre & Niche',
+    description: 'Music, news, sports, podcasts, tutorials, entertainment — if it\'s on YouTube, we\'ll curate it for you.',
   },
   {
-    icon: Clock,
-    title: 'Save & Access Anytime',
-    description: 'Your playlists are saved to your account. Access them whenever you need them.',
+    icon: Focus,
+    title: 'Distraction-Free Viewing',
+    description: 'Enjoy focused content consumption without ads, recommendations, or distractions pulling you away.',
   },
   {
     icon: Shield,
@@ -31,8 +31,8 @@ const features = [
   },
   {
     icon: Heart,
-    title: 'Made for Music Lovers',
-    description: 'Built by music enthusiasts who understand what makes a great playlist.',
+    title: 'Made for Content Lovers',
+    description: 'Built by enthusiasts who understand what makes a great playlist — for any type of content.',
   },
 ]
 
@@ -51,7 +51,7 @@ export function Features() {
             Why Choose PlaylistHero?
           </h2>
           <p className="text-white/60 max-w-2xl mx-auto">
-            We&apos;ve built the ultimate tool for music discovery and playlist creation
+            The ultimate tool for content discovery — playlist love for every genre, interest, and niche
           </p>
         </motion.div>
 

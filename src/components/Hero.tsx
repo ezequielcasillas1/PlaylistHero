@@ -1,7 +1,7 @@
 'use client'
 
 import { motion } from 'framer-motion'
-import { Sparkles, Play, Zap, Music } from 'lucide-react'
+import { Sparkles, Play, Zap, Focus } from 'lucide-react'
 
 export function Hero() {
   return (
@@ -34,7 +34,7 @@ export function Hero() {
             <br />
             <span className="gradient-text">YouTube Playlists</span>
             <br />
-            <span className="text-white">with AI</span>
+            <span className="text-white">for Everything</span>
           </motion.h1>
 
           <motion.p
@@ -43,7 +43,7 @@ export function Hero() {
             transition={{ duration: 0.6, delay: 0.2 }}
             className="mt-6 text-lg sm:text-xl text-white/60 max-w-2xl mx-auto"
           >
-            Describe your mood, activity, or vibe — and let PlaylistHero curate the perfect YouTube playlist for you in seconds.
+            Music, news, sports, tutorials, entertainment — describe what you want and enjoy a distraction-free viewing experience curated by AI in seconds.
           </motion.p>
 
           <motion.div
@@ -75,9 +75,9 @@ export function Hero() {
             className="mt-16 grid grid-cols-3 gap-8 max-w-2xl mx-auto"
           >
             {[
-              { icon: Music, label: 'Playlists Created', value: '50K+' },
+              { icon: Focus, label: 'Distraction-Free', value: '100%' },
               { icon: Zap, label: 'Generation Time', value: '<5s' },
-              { icon: Sparkles, label: 'User Satisfaction', value: '99%' },
+              { icon: Sparkles, label: 'Content Types', value: '∞' },
             ].map((stat, i) => (
               <div key={i} className="text-center">
                 <stat.icon className="h-6 w-6 text-red-500 mx-auto mb-2" />

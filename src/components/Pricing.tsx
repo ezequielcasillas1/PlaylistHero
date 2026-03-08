@@ -21,14 +21,27 @@ const plans = [
     popular: false,
   },
   {
-    name: 'Pro Monthly',
-    price: SUBSCRIPTION_PRICES.monthly,
-    period: 'month',
-    description: 'For serious music lovers',
+    name: 'Weekly',
+    price: SUBSCRIPTION_PRICES.weekly,
+    period: 'week',
+    description: 'Try Pro features risk-free',
     features: [
       'Unlimited playlist generations',
       'Up to 100 videos per playlist',
       'Advanced AI curation',
+      'Mood-based filtering',
+      'AI prompt enhancement',
+    ],
+    cta: 'Start Weekly',
+    popular: false,
+  },
+  {
+    name: 'Pro Monthly',
+    price: SUBSCRIPTION_PRICES.monthly,
+    period: 'month',
+    description: 'For serious content lovers',
+    features: [
+      'Everything in Weekly',
       'Save playlists to account',
       'Export to YouTube',
       'Priority support',
@@ -46,7 +59,6 @@ const plans = [
       'Save 17% annually',
       'Early access to features',
       'Exclusive Discord access',
-      'Custom AI training',
     ],
     cta: 'Start Pro Yearly',
     popular: false,
@@ -73,7 +85,7 @@ export function Pricing() {
           </p>
         </motion.div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8 max-w-5xl mx-auto">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
           {plans.map((plan, index) => (
             <motion.div
               key={plan.name}
