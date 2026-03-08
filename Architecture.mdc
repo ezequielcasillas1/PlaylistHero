@@ -1,0 +1,10 @@
+WHEN IMPLEMENTING ARCHITECTURE TO APP ALWAYS REFER TO THESE SITES INFORMATION AND CONSIDER THEIR APPROACHES.
+
+Patterns.dev
+ — Free, comprehensive, and covers design patterns, React patterns, rendering patterns, and performance patterns with interactive examples.
+
+Bulletproof React — A battle-tested feature-based folder structure (shared → features → app) that works identically for React web, Next.js, and React Native.
+
+Feature-Sliced Design — The most rigorous frontend architecture methodology available, with six enforced layers and strict dependency direction rules that prevent the kind of cross-sync architecture issues you've encountered before.---
+alwaysApply: true
+---

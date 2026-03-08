@@ -10,12 +10,13 @@
 **Files:** src/components/*
 **Result:** Built Header, Footer, Hero, PlaylistGenerator, VideoGrid, YouTubeEmbed, UpgradeModal with glass effects and animations
 
-### 2026-03-07 - API Services
+### 2026-03-07 - Secure API Routes
 **Status:** SUCCESS
-**Files:** src/lib/youtube.ts, src/lib/gemini.ts, src/lib/supabase.ts
-**Result:** YouTube, Gemini, Supabase services with mock fallbacks
+**Files:** src/app/api/generate/route.ts, .env.local
+**Result:** Moved YouTube and Gemini API calls to server-side Route Handler. Keys no longer exposed in browser.
 
-### 2026-03-07 - Styling System
-**Status:** SUCCESS
-**Files:** tailwind.config.ts, src/app/globals.css
-**Result:** Custom theme with glass utilities, glow effects, gradient backgrounds
+### Architecture Changes
+- `YOUTUBE_API_KEY` and `GEMINI_API_KEY` are now server-only (no NEXT_PUBLIC_ prefix)
+- Client calls `/api/generate` endpoint
+- Server handles all external API calls
+- Supabase keys remain client-side (protected by RLS)

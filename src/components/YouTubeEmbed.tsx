@@ -1,13 +1,14 @@
 'use client'
 
 import { motion } from 'framer-motion'
-import { getYouTubeEmbedUrl } from '@/lib/youtube'
 
 interface YouTubeEmbedProps {
   videoId: string
 }
 
 export function YouTubeEmbed({ videoId }: YouTubeEmbedProps) {
+  const embedUrl = `https://www.youtube.com/embed/${videoId}?autoplay=0&rel=0`
+
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.95 }}
@@ -16,7 +17,7 @@ export function YouTubeEmbed({ videoId }: YouTubeEmbedProps) {
       className="relative aspect-video w-full rounded-2xl overflow-hidden glass glow-red"
     >
       <iframe
-        src={getYouTubeEmbedUrl(videoId)}
+        src={embedUrl}
         title="YouTube video player"
         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
         allowFullScreen

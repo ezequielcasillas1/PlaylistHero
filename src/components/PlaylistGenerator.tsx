@@ -2,15 +2,13 @@
 
 import { useState, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Sparkles, Music2, ListMusic } from 'lucide-react'
+import { Sparkles, Music2, ListMusic, AlertCircle } from 'lucide-react'
 import { Button } from './ui/button'
 import { Textarea } from './ui/textarea'
 import { VideoGrid } from './VideoGrid'
 import { YouTubeEmbed } from './YouTubeEmbed'
 import { UpgradeModal } from './UpgradeModal'
 import { Video, FREE_PROMPT_LIMIT } from '@/types'
-import { searchVideos } from '@/lib/youtube'
-import { generatePlaylistFromPrompt } from '@/lib/gemini'
 
 const VIDEO_COUNT_OPTIONS = [10, 20, 30, 50, 100]
 
@@ -24,6 +22,7 @@ export function PlaylistGenerator() {
   const [playlistDescription, setPlaylistDescription] = useState('')
   const [promptCount, setPromptCount] = useState(0)
   const [showUpgradeModal, setShowUpgradeModal] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const [userTier] = useState<'free' | 'paid'>('free')
 
   const handleGenerate = useCallback(async () => {
@@ -37,33 +36,33 @@ export function PlaylistGenerator() {
     setIsLoading(true)
     setVideos([])
     setSelectedVideo(null)
+    setError(null)
 
     try {
-      const geminiResponse = await generatePlaylistFromPrompt(prompt, videoCount)
-      setPlaylistTitle(geminiResponse.playlistTitle)
-      setPlaylistDescription(geminiResponse.playlistDescription)
+      const response = await fetch('/api/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt, videoCount }),
+      })
 
-      const allVideos: Video[] = []
-      const videosPerQuery = Math.ceil(videoCount / geminiResponse.searchQueries.length)
+      const data = await response.json()
 
-      for (const query of geminiResponse.searchQueries) {
-        if (allVideos.length >= videoCount) break
-        const results = await searchVideos(query, videosPerQuery)
-        allVideos.push(...results)
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to generate playlist')
       }
 
-      const uniqueVideos = allVideos
-        .filter((v, i, arr) => arr.findIndex(x => x.id === v.id) === i)
-        .slice(0, videoCount)
+      setPlaylistTitle(data.playlistTitle)
+      setPlaylistDescription(data.playlistDescription)
+      setVideos(data.videos)
 
-      setVideos(uniqueVideos)
-      if (uniqueVideos.length > 0) {
-        setSelectedVideo(uniqueVideos[0])
+      if (data.videos.length > 0) {
+        setSelectedVideo(data.videos[0])
       }
 
       setPromptCount(prev => prev + 1)
-    } catch (error) {
-      console.error('Error generating playlist:', error)
+    } catch (err) {
+      console.error('Error generating playlist:', err)
+      setError(err instanceof Error ? err.message : 'Something went wrong')
     } finally {
       setIsLoading(false)
     }
@@ -200,6 +199,23 @@ export function PlaylistGenerator() {
                 selectedVideoId={selectedVideo?.id}
                 onVideoSelect={setSelectedVideo}
               />
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Error state */}
+        <AnimatePresence>
+          {error && !isLoading && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              className="mt-8 max-w-2xl mx-auto"
+            >
+              <div className="flex items-center gap-3 p-4 rounded-xl bg-red-500/10 border border-red-500/20">
+                <AlertCircle className="h-5 w-5 text-red-400 shrink-0" />
+                <p className="text-sm text-red-300">{error}</p>
+              </div>
             </motion.div>
           )}
         </AnimatePresence>
