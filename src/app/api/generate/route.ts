@@ -44,6 +44,12 @@ function getClientIP(request: NextRequest): string {
   return 'unknown'
 }
 
+// DEV ONLY - localhost bypass for unlimited generations
+function isLocalhost(request: NextRequest): boolean {
+  const host = request.headers.get('host') || ''
+  return host.startsWith('localhost') || host.startsWith('127.0.0.1')
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body: GenerateRequest = await request.json()
@@ -64,28 +70,34 @@ export async function POST(request: NextRequest) {
     }
 
     const ipAddress = getClientIP(request)
+    const isLocal = isLocalhost(request)
 
-    // Verify cookie consent server-side
-    const consentResult = await checkCookieConsent(fingerprint, ipAddress)
-    if (!consentResult.hasConsent) {
-      return NextResponse.json(
-        { error: 'Cookie consent required', requiresConsent: true },
-        { status: 403 }
-      )
-    }
+    // DEV ONLY - Skip checks for localhost
+    let usageResult = { canGenerate: true, remainingCount: 999 }
 
-    // Server-side rate limiting
-    const usageResult = await checkAndIncrementUsage(fingerprint, ipAddress)
+    if (!isLocal) {
+      // Verify cookie consent server-side
+      const consentResult = await checkCookieConsent(fingerprint, ipAddress)
+      if (!consentResult.hasConsent) {
+        return NextResponse.json(
+          { error: 'Cookie consent required', requiresConsent: true },
+          { status: 403 }
+        )
+      }
 
-    if (!usageResult.canGenerate) {
-      return NextResponse.json(
-        { 
-          error: 'Free generation limit reached. Please upgrade to continue.',
-          limitReached: true,
-          remainingCount: 0
-        },
-        { status: 429 }
-      )
+      // Server-side rate limiting
+      usageResult = await checkAndIncrementUsage(fingerprint, ipAddress)
+
+      if (!usageResult.canGenerate) {
+        return NextResponse.json(
+          { 
+            error: 'Free generation limit reached. Please upgrade to continue.',
+            limitReached: true,
+            remainingCount: 0
+          },
+          { status: 429 }
+        )
+      }
     }
 
     const geminiResponse = await generateSearchQueries(prompt || '', videoCount, mood, enhancePrompt)

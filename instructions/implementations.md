@@ -1,5 +1,10 @@
 # Implementation Log
 
+### 2026-03-10 - Playlist Playback Hybrid UX
+**Status:** SUCCESS
+**Files:** PlaylistDrawer.tsx (new), PlaylistCard.tsx, page.tsx
+**Result:** Fixed playlist video playback. Added hover preview on cards (muted autoplay after 800ms), "Play All" & "Shuffle" quick actions, slide-over drawer with video player, queue list, prev/next/shuffle/repeat controls.
+
 ### 2026-03-07 - Next.js 14 Migration
 **Status:** SUCCESS
 **Files:** Complete project rebuild

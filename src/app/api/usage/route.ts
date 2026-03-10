@@ -11,6 +11,12 @@ function getClientIP(request: NextRequest): string {
   return 'unknown'
 }
 
+// DEV ONLY - localhost bypass
+function isLocalhost(request: NextRequest): boolean {
+  const host = request.headers.get('host') || ''
+  return host.startsWith('localhost') || host.startsWith('127.0.0.1')
+}
+
 export async function POST(request: NextRequest) {
   try {
     const { fingerprint } = await request.json()
@@ -20,6 +26,14 @@ export async function POST(request: NextRequest) {
         { error: 'Missing fingerprint' },
         { status: 400 }
       )
+    }
+
+    // DEV ONLY - unlimited for localhost
+    if (isLocalhost(request)) {
+      return NextResponse.json({
+        remainingCount: 999,
+        canGenerate: true,
+      })
     }
 
     const ipAddress = getClientIP(request)

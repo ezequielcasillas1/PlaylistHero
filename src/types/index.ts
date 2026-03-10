@@ -9,10 +9,13 @@ export interface Video {
 export interface Playlist {
   id: string
   user_id: string
-  prompt: string
+  name: string
+  prompt?: string
+  description?: string
   video_count: number
   videos: Video[]
   created_at: string
+  updated_at?: string
 }
 
 export interface User {
@@ -20,6 +23,7 @@ export interface User {
   email: string
   tier: 'free' | 'weekly' | 'monthly' | 'yearly'
   prompt_count: number
+  playlist_count: number
   created_at: string
 }
 
@@ -32,3 +36,4 @@ export const SUBSCRIPTION_PRICES = {
 } as const
 
 export const FREE_PROMPT_LIMIT = 3
+export const FREE_PLAYLIST_LIMIT = 3

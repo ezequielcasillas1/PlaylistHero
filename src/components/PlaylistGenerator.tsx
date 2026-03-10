@@ -2,14 +2,16 @@
 
 import { useState, useCallback, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Sparkles, Music2, ListMusic, AlertCircle, Smile, ChevronDown, Wand2, Loader2, Gift, Video as VideoIcon, BookOpen, Clock, Users, User, Search, X } from 'lucide-react'
+import { Sparkles, Music2, ListMusic, AlertCircle, Smile, ChevronDown, Wand2, Loader2, Gift, Video as VideoIcon, BookOpen, Clock, Users, User, Search, X, Save, Check } from 'lucide-react'
 import { Button } from './ui/button'
 import { Textarea } from './ui/textarea'
 import { VideoGrid } from './VideoGrid'
 import { YouTubeEmbed } from './YouTubeEmbed'
 import { UpgradeModal } from './UpgradeModal'
+import { SavePlaylistModal } from './SavePlaylistModal'
 import { Video, FREE_PROMPT_LIMIT } from '@/types'
 import { getFingerprint } from '@/lib/fingerprint'
+import { useAuth } from './AuthProvider'
 
 const VIDEO_COUNT_OPTIONS = [10, 20, 30, 50, 100]
 
@@ -69,7 +71,11 @@ const ContentTypeIcon = ({ type }: { type: string }) => {
   }
 }
 
-export function PlaylistGenerator() {
+interface PlaylistGeneratorProps {
+  onPlaylistSaved?: () => void
+}
+
+export function PlaylistGenerator({ onPlaylistSaved }: PlaylistGeneratorProps = {}) {
   const [prompt, setPrompt] = useState('')
   const [videoCount, setVideoCount] = useState(20)
   const [mood, setMood] = useState('')
@@ -85,9 +91,13 @@ export function PlaylistGenerator() {
   const [playlistDescription, setPlaylistDescription] = useState('')
   const [remainingCount, setRemainingCount] = useState(FREE_PROMPT_LIMIT)
   const [showUpgradeModal, setShowUpgradeModal] = useState(false)
+  const [showSaveModal, setShowSaveModal] = useState(false)
+  const [playlistSaved, setPlaylistSaved] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [userTier] = useState<'free' | 'paid'>('free')
   const [fingerprint, setFingerprint] = useState<string | null>(null)
+  
+  const { user } = useAuth()
   
   // Creator mode state
   const [creatorMode, setCreatorMode] = useState<'multiple' | 'one'>('multiple')
@@ -319,19 +329,19 @@ export function PlaylistGenerator() {
   }, [mood, isSurprising])
 
   return (
-    <section id="generator" className="relative py-20">
+    <section id="generator" className="relative py-4">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6 }}
-          className="text-center mb-12"
+          className="text-center mb-6"
         >
-          <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">
+          <h2 className="text-2xl sm:text-3xl font-bold text-white mb-2">
             Generate Your Playlist
           </h2>
-          <p className="text-white/60 max-w-xl mx-auto">
+          <p className="text-white/60 text-sm max-w-xl mx-auto">
             Describe what you&apos;re looking for and we&apos;ll create the perfect playlist for you
           </p>
         </motion.div>
@@ -343,10 +353,10 @@ export function PlaylistGenerator() {
           transition={{ duration: 0.6, delay: 0.1 }}
           className="max-w-2xl mx-auto"
         >
-          <div className="glass rounded-3xl p-6 sm:p-8 glow-red">
+          <div className="glass rounded-3xl p-4 sm:p-6 glow-red">
             {/* Free tier indicator */}
             {userTier === 'free' && (
-              <div className="flex items-center justify-between mb-6 p-3 rounded-xl bg-white/5 border border-white/10">
+              <div className="flex items-center justify-between mb-4 p-2 rounded-xl bg-white/5 border border-white/10">
                 <div className="flex items-center gap-2">
                   <Sparkles className="h-4 w-4 text-yellow-500" />
                   <span className="text-sm text-white/70">Free Plan</span>
@@ -358,14 +368,14 @@ export function PlaylistGenerator() {
             )}
 
             {/* Generation options helper text */}
-            <div className="mb-6 text-center">
-              <p className="text-sm text-white/60">
+            <div className="mb-4 text-center">
+              <p className="text-xs text-white/60">
                 Generate by <span className="text-violet-400">selecting one creator</span> or <span className="text-emerald-400">describing what you want</span> with filters
               </p>
             </div>
 
             {/* Mood selector */}
-            <div className="mb-6">
+            <div className="mb-4">
               <label className="block text-sm font-medium text-white/80 mb-2">
                 <Smile className="inline h-4 w-4 mr-2" />
                 How are you feeling?
@@ -414,7 +424,7 @@ export function PlaylistGenerator() {
             </div>
 
             {/* Prompt input */}
-            <div className="mb-6">
+            <div className="mb-4">
               <label className="block text-sm font-medium text-white/80 mb-2">
                 <Music2 className="inline h-4 w-4 mr-2" />
                 Describe what you want to watch
@@ -423,7 +433,7 @@ export function PlaylistGenerator() {
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
                 placeholder="e.g., Chill lofi beats for late night coding, today's tech news and reviews, football highlights from this week, relaxing nature documentaries..."
-                className="min-h-[120px]"
+                className="min-h-[80px]"
               />
               
               {/* Hero toggle buttons */}
@@ -508,9 +518,9 @@ export function PlaylistGenerator() {
               </div>
 
               {/* Time Range Filter */}
-              <div className="mt-4">
-                <label className="flex items-center gap-2 text-sm text-white/60 mb-2">
-                  <Clock className="h-4 w-4" />
+              <div className="mt-3">
+                <label className="flex items-center gap-2 text-xs text-white/60 mb-1.5">
+                  <Clock className="h-3.5 w-3.5" />
                   Time Range
                 </label>
                 <div className="flex items-center gap-1 bg-white/5 rounded-xl p-1 border border-white/10">
@@ -534,9 +544,9 @@ export function PlaylistGenerator() {
               </div>
 
               {/* Creator Mode Filter */}
-              <div className="mt-4">
-                <label className="flex items-center gap-2 text-sm text-white/60 mb-2">
-                  <Users className="h-4 w-4" />
+              <div className="mt-3">
+                <label className="flex items-center gap-2 text-xs text-white/60 mb-1.5">
+                  <Users className="h-3.5 w-3.5" />
                   Creator Source
                 </label>
                 <div className="flex items-center gap-1 bg-white/5 rounded-xl p-1 border border-white/10">
@@ -676,9 +686,9 @@ export function PlaylistGenerator() {
             </div>
 
             {/* Video count selector */}
-            <div className="mb-6">
-              <label className="block text-sm font-medium text-white/80 mb-3">
-                <ListMusic className="inline h-4 w-4 mr-2" />
+            <div className="mb-4">
+              <label className="block text-xs font-medium text-white/80 mb-2">
+                <ListMusic className="inline h-3.5 w-3.5 mr-1.5" />
                 Number of videos
               </label>
               <div className="flex flex-wrap gap-2">
@@ -686,7 +696,7 @@ export function PlaylistGenerator() {
                   <button
                     key={count}
                     onClick={() => setVideoCount(count)}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 ${
+                    className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-300 ${
                       videoCount === count
                         ? 'bg-red-500 text-white shadow-lg shadow-red-500/25'
                         : 'bg-white/5 text-white/60 hover:bg-white/10 hover:text-white border border-white/10'
@@ -704,7 +714,6 @@ export function PlaylistGenerator() {
               disabled={!prompt.trim() && !(creatorMode === 'one' && selectedCreator)}
               loading={isLoading}
               className="w-full"
-              size="lg"
             >
               <Sparkles className="h-5 w-5 mr-2" />
               {creatorMode === 'one' && selectedCreator && !prompt.trim()
@@ -733,7 +742,35 @@ export function PlaylistGenerator() {
                 >
                   {playlistTitle}
                 </motion.h3>
-                <p className="text-white/60">{playlistDescription}</p>
+                <p className="text-white/60 mb-4">{playlistDescription}</p>
+                
+                {/* Save playlist button */}
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.3 }}
+                >
+                  {playlistSaved ? (
+                    <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-green-500/20 text-green-400 border border-green-500/30">
+                      <Check className="h-4 w-4" />
+                      Playlist Saved!
+                    </div>
+                  ) : (
+                    <Button
+                      onClick={() => setShowSaveModal(true)}
+                      variant="outline"
+                      className="border-red-500/50 text-red-400 hover:bg-red-500/10"
+                    >
+                      <Save className="h-4 w-4 mr-2" />
+                      {user ? 'Save to My Playlists' : 'Save Playlist'}
+                    </Button>
+                  )}
+                  {!user && (
+                    <p className="text-xs text-white/50 mt-2">
+                      Create an account to save permanently
+                    </p>
+                  )}
+                </motion.div>
                 
                 {/* Enhanced prompt display */}
                 {enhancedPromptText && (
@@ -818,6 +855,20 @@ export function PlaylistGenerator() {
       <UpgradeModal
         isOpen={showUpgradeModal}
         onClose={() => setShowUpgradeModal(false)}
+      />
+
+      <SavePlaylistModal
+        isOpen={showSaveModal}
+        onClose={() => setShowSaveModal(false)}
+        videos={videos}
+        suggestedName={playlistTitle}
+        suggestedDescription={playlistDescription}
+        prompt={prompt}
+        onSaved={() => {
+          setPlaylistSaved(true)
+          setShowSaveModal(false)
+          onPlaylistSaved?.()
+        }}
       />
     </section>
   )

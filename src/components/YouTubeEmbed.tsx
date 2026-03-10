@@ -1,23 +1,29 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { Loader2 } from 'lucide-react'
 
 interface YouTubeEmbedProps {
   videoId: string
+  autoplay?: boolean
 }
 
-export function YouTubeEmbed({ videoId }: YouTubeEmbedProps) {
+export function YouTubeEmbed({ videoId, autoplay = false }: YouTubeEmbedProps) {
   const [isLoading, setIsLoading] = useState(true)
-  const embedUrl = `https://www.youtube.com/embed/${videoId}?autoplay=0&rel=0&modestbranding=1`
+  
+  useEffect(() => {
+    setIsLoading(true)
+  }, [videoId])
+
+  const embedUrl = `https://www.youtube.com/embed/${videoId}?autoplay=${autoplay ? 1 : 0}&rel=0&modestbranding=1`
 
   return (
     <motion.div
       key={videoId}
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
-      transition={{ duration: 0.4 }}
+      transition={{ duration: 0.3 }}
       className="relative aspect-video w-full rounded-2xl overflow-hidden glass glow-red"
     >
       {isLoading && (

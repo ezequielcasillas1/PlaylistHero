@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
 import { CookieConsentProvider } from '@/components/CookieConsent'
+import { AuthProvider } from '@/components/AuthProvider'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -25,11 +26,13 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark">
       <body className={inter.className}>
-        <CookieConsentProvider>
-          <div className="min-h-screen bg-gradient-to-br from-black via-[#1a0000] to-[#330000]">
-            {children}
-          </div>
-        </CookieConsentProvider>
+        <AuthProvider>
+          <CookieConsentProvider>
+            <div className="min-h-screen bg-gradient-to-br from-black via-[#1a0000] to-[#330000]">
+              {children}
+            </div>
+          </CookieConsentProvider>
+        </AuthProvider>
       </body>
     </html>
   )
